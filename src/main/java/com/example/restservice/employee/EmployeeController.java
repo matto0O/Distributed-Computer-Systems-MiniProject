@@ -8,9 +8,15 @@ import org.springframework.hateoas.EntityModel;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
@@ -29,6 +35,22 @@ public class EmployeeController {
 
     public EmployeeController() throws IOException, TimeoutException {
         producer  = new Producer();
+    }
+
+    @PostMapping("/upload")
+    public ResponseEntity<?> uploadPhoto(@RequestParam("file") MultipartFile file) {
+        System.out.println("dasfdasf");
+        String fileName = StringUtils.cleanPath(file.getOriginalFilename());
+
+        try {
+            Path filePath = Path.of("C:\\Users\\mateu\\IdeaProjects\\RestService\\src\\main\\resources\\users").resolve(fileName);
+            Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
+            return ResponseEntity.ok().body(filePath.toString());
+        } catch (IOException e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     @GetMapping("/{id}/image")
@@ -129,7 +151,7 @@ public class EmployeeController {
         try{
             System.out.println("called POST");
             return ResponseEntity.status(201).body(repository.addEmployee(repository.lastId(), employee.getFirstName(),
-                    employee.getAge(), employee.getWage()));
+                    employee.getAge(), employee.getWage(), employee.getPhoto()));
         } catch (EmployeeExistsEx ex) {
             System.out.println("POST Exception");
             throw ex;

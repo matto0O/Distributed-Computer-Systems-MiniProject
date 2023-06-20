@@ -11,7 +11,7 @@ public interface EmployeeRepository {
     void updateEmployee(int id, String name, int age, double wage) throws
             EmployeeNotFoundEx;
     boolean deleteEmployee(int id) throws EmployeeNotFoundEx;
-    Employee addEmployee(int id, String name, int age, double wage) throws EmployeeExistsEx;
+    Employee addEmployee(int id, String name, int age, double wage, String photo) throws EmployeeExistsEx;
     int countEmployees();
     public int lastId();
 }

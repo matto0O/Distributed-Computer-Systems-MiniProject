@@ -32,14 +32,14 @@ public class EmployeeRepositoryImpl implements EmployeeRepository {
         }
         throw new EmployeeNotFoundEx();
     }
-    public Employee addEmployee(int id, String name, int age, double wage) throws
+    public Employee addEmployee(int id, String name, int age, double wage, String photo) throws
             EmployeeExistsEx {
         for (Employee theEmployee : employeeList) {
             if (theEmployee.getId() == id) {
                 throw new EmployeeExistsEx();
             }
         }
-        Employee employee = new Employee(id, name, age, wage);
+        Employee employee = new Employee(id, name, age, wage, EmployeeStatus.AVAILABLE, photo);
         employeeList.add(employee);
         return employee;
     }

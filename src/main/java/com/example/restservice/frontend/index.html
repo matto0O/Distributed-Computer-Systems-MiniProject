@@ -197,27 +197,50 @@
             const firstNameInput = document.getElementById("add_firstName");
             const ageInput = document.getElementById("add_age");
             const wageInput = document.getElementById("add_wage");
+            const photoInput = document.getElementById("add_photo");
 
             var newEmployee = Object.create(Employee);
             newEmployee.firstName = firstNameInput.value;
             newEmployee.age = ageInput.value;
             newEmployee.wage = wageInput.value;
+            newEmployee.photo = photoInput.files[0].name;
+
+            var formData = new FormData();
+            formData.append("file", photoInput.files[0]);
+
+            console.log(myUrl + "/upload");
 
             $.ajax({
                 type: "POST",
-                url: myUrl,
-                data: JSON.stringify(newEmployee),
-                contentType: "application/json; charset=utf-8",
-                dataType: "json",
-            })
-            .done(function(msg) {
-                closeAddWindow();
-                getAllEmployees();
-            })
-            .fail(function(errMsg) {
-                alert(JSON.stringify(errMsg));
-                console.log(JSON.stringify(newEmployee))
+                url: myUrl + "/upload",
+                data: formData,
+                contentType: false,
+                processData: false,
+                success: function (response) {
+                    newEmployee.photo = response; // Assuming the backend returns the file path
+                    console.log(JSON.stringify(newEmployee));
+                    $.ajax({
+                        type: "POST",
+                        url: myUrl,
+                        data: JSON.stringify(newEmployee),
+                        contentType: "application/json; charset=utf-8",
+                        dataType: "json",
+                    })
+                    .done(function(msg) {
+                        closeAddWindow();
+                        getAllEmployees();
+                    })
+                    .fail(function(errMsg) {
+                        alert(JSON.stringify(errMsg));
+                        console.log(JSON.stringify(newEmployee))
+                    });
+                },
+                error: function (errMsg) {
+                    alert(JSON.stringify(errMsg));
+                }
             });
+
+
         }
 
         function closeAddWindow() {
@@ -266,6 +289,8 @@
         <input type="text" id="add_age"><br>
         <label>Wage:</label><br>
         <input type="text" id="add_wage"><br>
+        <label>Photo:</label><br>
+        <input type="file" accept="image/jpeg, image/jpg" id="add_photo"><br>
         <button onclick="saveNewEmployee()">Save</button>
         <button onclick="closeAddWindow()">Cancel</button>
     </div>
