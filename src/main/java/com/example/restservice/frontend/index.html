@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Employee Management</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+
+    <script type="text/javascript"> 
+        var myUrl = "http://localhost:8080/employees";
+
+        var Employee = {
+            "id": 0,
+            "firstName": "-",
+            "age": 0,
+            "wage": 0.0,
+            "status": "AVAILABLE",
+            "photo": "src/main/resources/users/default.jpg"
+        };
+
+        $(document).ready(function() {
+            getAllEmployees();
+        });
+
+        function getAllEmployees() {
+            $.ajax({
+                type: "GET",
+                url: myUrl,
+                dataType: "json",
+            }) 
+            .done(function(response) {
+                console.log(response);
+                showEmployeeList(response._embedded.employeeList);
+            })
+            .fail(function(errMsg) {
+                alert(JSON.stringify(errMsg));
+            }); 
+        }
+
+        function getPhoto(id) {
+            let photoUrl = myUrl+'/'+id+'/image'
+                console.log(photoUrl);
+            $.ajax({
+                type: "GET",
+                url: photoUrl,
+                contentType: "image/jpg",
+            }) 
+            .done(function(response) {
+                displayPhoto(photoUrl);
+            })
+            .fail(function(errMsg) {
+                alert(JSON.stringify(errMsg));
+            }); 
+            displayPhoto(photoUrl);
+        }
+
+        function showEmployeeList(employeeList) {
+            let employeeTableData = '';
+            let newRow = '';
+
+            var myTable = document.getElementById("my_table");
+            var rows = myTable.getElementsByTagName("tr");
+
+            for (var i = rows.length - 1; i > 0; i--) {
+                myTable.removeChild(rows[i]);
+            }
+            
+            employeeList.forEach(employee => {
+                newRow = document.createElement("tr");
+                let buttons = '';
+                console.log(employee.firstName);
+                let editButton = document.createElement("td");
+                editButton.innerHTML = '<button class="yellow">edit</button>';
+                editButton.onclick = function () {
+                    onEdit(employee);
+                };
+
+                
+                let showPhotoButton = document.createElement("td");
+                showPhotoButton.innerHTML = '<button class="yellow">see photo</button>';
+                showPhotoButton.onclick = function () {
+                    getPhoto(employee.id);
+                };
+                
+                buttons += `<td><button class="red" onclick="onChange(${employee.id})">change status</button></td>`;
+                
+                if( employee._links.delete != undefined)
+                    buttons += `<td><button class="red" onclick="onDelete(${employee.id})">fire</button></td>`;
+                else 
+                    buttons += `<td><button class="hidden">fire</button></td>`;
+                
+                employeeTableData = 
+                    `<td>${employee.id}</td>` +
+                    `<td>${employee.firstName}</td>` +
+                    `<td>${employee.status}</td>` +
+                    `<td>${employee.age}</td>` +
+                    `<td>${employee.wage}</td>` + buttons;
+
+                newRow.innerHTML = employeeTableData;
+                newRow.append(editButton);
+                newRow.append(showPhotoButton);
+                myTable.appendChild(newRow);
+            });
+        }
+
+        function onDelete(id) {
+            $.ajax( {
+                type: "DELETE",
+                url: myUrl + "/" + id,
+                dataType: "json",
+            })
+            .done(function(msg) {
+                getAllEmployees();
+            })
+            .fail(function(errMsg) {
+                alert(JSON.stringify(errMsg));
+            }); 
+        }
+
+        function onChange(id) {
+            $.ajax( {
+                type: "PATCH",
+                url: myUrl + "/change/" + id,
+                dataType: "json",
+            })
+            .done(function(msg) {
+                getAllEmployees();
+            })
+            .fail(function(errMsg) {
+                alert(JSON.stringify(errMsg));
+            }); 
+        }
+
+        function displayPhoto(photoURL) {
+            const photoContainer = document.getElementById("photo_container");
+            const image = document.createElement("img");
+            image.src = photoURL
+            photoContainer.innerHTML = '';
+            photoContainer.appendChild(image);
+        }
+
+        function onEdit(employee) {
+            document.body.scrollTop = document.documentElement.scrollTop = 0;
+            console.log(employee);
+            document.getElementById("edit_window").style.display = "block";
+            
+            const idInput = document.getElementById("edit_id");
+            idInput.value = employee.id;
+
+            const firstNameInput = document.getElementById("edit_firstName");
+            firstNameInput.value = employee.firstName;
+
+            const ageInput = document.getElementById("edit_age");
+            ageInput.value = employee.age;
+
+            const wageInput = document.getElementById("edit_wage");
+            wageInput.value = employee.wage;
+        }
+
+        function saveEditedEmployee() {
+            const idInput = document.getElementById("edit_id");
+            const firstNameInput = document.getElementById("edit_firstName");
+            const ageInput = document.getElementById("edit_age");
+            const wageInput = document.getElementById("edit_wage");
+
+            var editedEmployee = Object.create(Employee);
+            editedEmployee.id = idInput.value;
+            editedEmployee.firstName = firstNameInput.value;
+            editedEmployee.age = ageInput.value;
+            editedEmployee.wage = wageInput.value;
+
+            $.ajax({
+                type: "PUT",
+                url: myUrl + '/' + editedEmployee.id,
+                data: JSON.stringify(editedEmployee),
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+            })
+            .done(function(msg) {
+                closeEditWindow();
+                getAllEmployees();
+            })
+            .fail(function(errMsg) {
+                alert(JSON.stringify(errMsg));
+            }); 
+        }
+
+        function closeEditWindow() {
+            document.getElementById("edit_window").style.display = "none";
+        }
+
+        function addEmployee() {
+            document.getElementById("add_window").style.display = "block";
+        }
+
+        function saveNewEmployee() {
+            const firstNameInput = document.getElementById("add_firstName");
+            const ageInput = document.getElementById("add_age");
+            const wageInput = document.getElementById("add_wage");
+
+            var newEmployee = Object.create(Employee);
+            newEmployee.firstName = firstNameInput.value;
+            newEmployee.age = ageInput.value;
+            newEmployee.wage = wageInput.value;
+
+            $.ajax({
+                type: "POST",
+                url: myUrl,
+                data: JSON.stringify(newEmployee),
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+            })
+            .done(function(msg) {
+                closeAddWindow();
+                getAllEmployees();
+            })
+            .fail(function(errMsg) {
+                alert(JSON.stringify(errMsg));
+                console.log(JSON.stringify(newEmployee))
+            });
+        }
+
+        function closeAddWindow() {
+            document.getElementById("add_window").style.display = "none";
+        }
+    </script>
+
+    <div>
+        <h2>Employee Management</h2>
+        <button onclick="addEmployee()">Hire Employee</button>
+    </div>
+
+    <table id="my_table">
+        <tr>
+            <th>ID</th>
+            <th>First Name</th>
+            <th>Status</th>
+            <th>Age</th>
+            <th>Wage</th>
+            <th>Change status</th>
+            <th>Fire</th>
+            <th>Edit</th>
+            <th>See photo</th>
+        </tr>
+    </table>
+
+    <div id="edit_window" style="display:none">
+        <h3>Edit Employee</h3>
+        <label>ID:</label><br>
+        <input type="text" id="edit_id" readonly><br>
+        <label>First Name:</label><br>
+        <input type="text" id="edit_firstName"><br>
+        <label>Age:</label><br>
+        <input type="text" id="edit_age"><br>
+        <label>Wage:</label><br>
+        <input type="text" id="edit_wage"><br>
+        <button onclick="saveEditedEmployee()">Save</button>
+        <button onclick="closeEditWindow()">Cancel</button>
+    </div>
+
+    <div id="add_window" style="display:none">
+        <h3>Hire Employee</h3>
+        <label>First Name:</label><br>
+        <input type="text" id="add_firstName"><br>
+        <label>Age:</label><br>
+        <input type="text" id="add_age"><br>
+        <label>Wage:</label><br>
+        <input type="text" id="add_wage"><br>
+        <button onclick="saveNewEmployee()">Save</button>
+        <button onclick="closeAddWindow()">Cancel</button>
+    </div>
+
+    <div id="photo_container"></div>
+
+</body>
+</html>
+
+
+<style>
+    body {
+        background-color: rgb(216, 216, 216);
+        font-family: Arial, sans-serif;
+        font-size: 16px;
+        line-height: 1.6;
+        margin: 0;
+        padding: 0;
+    }
+    #photo_container img {
+        max-width: 400px;
+        max-height: 400px;
+    }
+
+    h1 {
+        font-size: 24px;
+        margin-bottom: 20px;
+    }
+
+    #container {
+        margin: 0 auto;
+        max-width: 800px;
+        padding: 20px;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    label {
+        display: block;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    select {
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-sizing: border-box;
+        font-size: 16px;
+        padding: 10px;
+        width: 100%;
+    }
+
+    .checkbox-label {
+        display: flex;
+        align-items: center;
+        margin-bottom: 5px;
+    }
+
+    .checkbox-label input[type="checkbox"] {
+        margin-right: 10px;
+    }
+
+    .button {
+        background-color: #4CAF50;
+        border: none;
+        border-radius: 4px;
+        color: #fff;
+        cursor: pointer;
+        font-size: 16px;
+        padding: 10px 20px;
+    }
+
+    .button:hover {
+        background-color: #45a049;
+    }
+
+    table {
+        border-collapse: collapse;
+        margin-top: 20px;
+        width: 100%;
+    }
+
+    th, td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+    }
+
+    th {
+        background-color: #4CAF50;
+        color: #fff;
+    }
+
+    .edit-button {
+        background-color: #2196F3;
+        border: none;
+        border-radius: 4px;
+        color: #fff;
+        cursor: pointer;
+        font-size: 14px;
+        padding: 5px 10px;
+    }
+
+    .edit-button:hover {
+        background-color: #0b7dda;
+    }
+
+    .delete-button {
+        background-color: #f44336;
+        border: none;
+        border-radius: 4px;
+        color: #fff;
+        cursor: pointer;
+        font-size: 14px;
+        padding: 5px 10px;
+    }
+
+    .delete-button:hover {
+        background-color: #d32f2f;
+    }
+
+    .hidden {
+        display: none;
+    }
+</style>
+
+
